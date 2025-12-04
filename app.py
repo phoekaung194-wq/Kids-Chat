@@ -97,3 +97,7 @@ if prompt := st.chat_input("စပါကီကို မေးခွန်းတ
 
     # Assistant Message ကို History ထဲ ထည့်သွင်း
     st.session_state.messages.append({"role": "assistant", "content": ai_response_text})
+    streamlit
+    openai
+    requests
+

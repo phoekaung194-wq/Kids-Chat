@@ -1,44 +1,14 @@
-# -----------------------------------------------------------------------
-# Sparky Chatbot Application (Streamlit + OpenRouter) - Fixed Version
-# -----------------------------------------------------------------------
-
-# လိုအပ်သော Libraries များကို ခေါ်ယူခြင်း
 import streamlit as st
+import os
 from openai import OpenAI
-from openai import APIError 
+from openai import APIError # FIXED: APIError ကို အစားထိုး import လုပ်ထားသည်
 
-# -----------------------------------------------------------------------
-# (၁) Streamlit Web Interface ကို သတ်မှတ်ခြင်း (ပထမဆုံး Streamlit Command ဖြစ်ရမည်)
-# -----------------------------------------------------------------------
-# **ဤသည်မှာ Streamlit Command များအားလုံး၏ ရှေ့ဆုံးတွင် ရှိရမည့် command ဖြစ်သည်။**
-st.set_page_config(page_title="Sparky - ကလေးသူငယ်ချစ်ဆွေ AI")
+# ⚠️ အဆင့် ၁: API Key ကို သတ်မှတ်ခြင်း
+# အရေးကြီးသည်: သင့်ရဲ့ OpenRouter Key အစစ်အမှန်ဖြင့် အစားထိုးပါ။ 
+OPENROUTER_API_KEY = "st.secrets["openrouter_api_key"]
 
-st.title("✨ Sparky - ကလေးသူငယ်ချစ်ဆွေ AI ✨ (OpenRouter ဖြင့်)")
-st.caption("🤖 ငါက မင်းရဲ့ အကောင်းဆုံး သူငယ်ချင်းပါ! မင်းရဲ့ မိဘတွေ ဒါမှမဟုတ် ဆရာဆရာမတွေနဲ့ စကားပြောချင်ရင်လည်း ပြောလိုရတယ်။")
-
-# -----------------------------------------------------------------------
-# (၂) API Key နှင့် URL ကို Streamlit Secrets မှ လုံခြုံစွာ ခေါ်ယူခြင်း
-# -----------------------------------------------------------------------
-# Key နှင့် URL တို့ကို Session State တွင် သိမ်းထားပါက နောက်ပိုင်းတွင် စစ်ဆေးရန် လွယ်ကူစေသည်။
-try:
-    # Key Name ကို 'OPENROUTER_API_KEY' (စာလုံးအကြီး) ဖြင့် သတ်မှတ်ထားရမည်
-    OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
-    OPENROUTER_BASE_URL = st.secrets.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
-    
-    # Key မရှိပါက App ကို ရပ်တန့်ခြင်း
-    if not OPENROUTER_API_KEY:
-        st.error("❌ Streamlit Secrets ထဲတွင် `OPENROUTER_API_KEY` ကို မတွေ့ပါ။ စစ်ဆေးပါ။")
-        st.stop()
-        
-except KeyError:
-    # Key မရှိပါက App ကို ရပ်တန့်ခြင်း
-    st.error("❌ Streamlit Secrets ထဲတွင် `OPENROUTER_API_KEY` နာမည်ဖြင့် မရှိပါ။ စစ်ဆေးပါ။")
-    st.stop()
-
-
-# -----------------------------------------------------------------------
-# (၃) Chat Client နှင့် History ကို စတင်ခြင်း (Initialization)
-# -----------------------------------------------------------------------
+# OpenRouter အတွက် Base URL
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
 # 🤖 ကလေးများအတွက် AI Assistant ရဲ့ လက္ခဏာရပ်များ
 KIDS_ASSISTANT_PERSONA = (
@@ -49,90 +19,81 @@ KIDS_ASSISTANT_PERSONA = (
     "Always respond in the language the child is using."
 )
 
+# ⭐️ OpenRouter Client (OpenAI ၏ Client ကို အသုံးပြု) ဖြင့် Chat Session ကို စတင်ခြင်း
 if 'chat_client' not in st.session_state:
     try:
+        # OpenRouter Key ကိုစစ်ဆေးပါ
+        if OPENROUTER_API_KEY == "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":
+            st.warning("⚠️ OpenRouter API Key ကို Key အစစ်အမှန်ဖြင့် အစားထိုးပေးပါ။")
+        
         # OpenRouter နှင့်ချိတ်ဆက်ရန် OpenAI Client ကို အသုံးပြုခြင်း
         client = OpenAI(
-            api_key=OPENROUTER_API_KEY, # လုံခြုံစွာ ခေါ်ယူထားသော Key
+            api_key=OPENROUTER_API_KEY,
             base_url=OPENROUTER_BASE_URL
         )
         
-        # Session State တွင် Client, Model နှင့် History များကို သတ်မှတ်ခြင်း
+        # Chat History များကို စတင်သတ်မှတ်ခြင်း
         st.session_state.chat_client = client
-        # Model ကို OpenRouter ၏ 'free' layer တစ်ခုခုဖြင့် သတ်မှတ်ထားခြင်း (လိုအပ်သလို ပြောင်းလဲနိုင်သည်)
-        st.session_state.model = "mistralai/mistral-7b-instruct:free" 
+        st.session_state.model = "mistralai/mistral-7b-instruct:free" # OpenRouter တွင် အခမဲ့ သုံးနိုင်သော Model
         
-        # Chat History ကို စတင်ခြင်း
-        # System Message ကို ပထမဆုံး Message အနေဖြင့် ထည့်သွင်းခြင်း
-        st.session_state.messages = [{"role": "system", "content": KIDS_ASSISTANT_PERSONA}]
+        # Streamlit Chat History
+        st.session_state.messages = [] 
         
+        # စနစ်ညွှန်ကြားချက်ကို ပထမဆုံး Message အနေဖြင့် ထည့်သွင်းခြင်း
+        st.session_state.messages.insert(0, {"role": "system", "content": KIDS_ASSISTANT_PERSONA})
+
+
     except Exception as e:
-        # Client Initialization အမှားဖြစ်ခဲ့ပါက Error ကို ပြသခြင်း
         st.error(f"❌ AI Client စတင်ရာတွင် အမှား: {e}")
+        st.error("OpenRouter API Key သို့မဟုတ် ချိတ်ဆက်မှုကို စစ်ဆေးပါ။")
         st.stop()
 
 
-# -----------------------------------------------------------------------
-# (၄) Chat History ကို ပြသခြင်း (Display)
-# -----------------------------------------------------------------------
+# 💻 Streamlit Web Interface
+st.set_page_config(page_title="Sparky - ကလေးသူငယ်ချင်း AI")
+st.title("🌟 Sparky - ကလေးသူငယ်ချင်း AI ✨ (OpenRouter ဖြင့်)")
+st.caption("ငါက စပါကီပါ။ မင်းနဲ့ စကားပြောရတာ ဝမ်းသာပါတယ်! (Gemini အတွက် Billing မလိုပါ)")
 
-# System Message ကို ဖယ်ထားပြီး User/Assistant Message များကိုသာ ပြသမည်
+# System Message ကို ပြသရန် မလို၊ User/Assistant Message များကိုသာ ပြသမည်
 for message in st.session_state.messages:
     if message["role"] in ["user", "assistant"]:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-
-# -----------------------------------------------------------------------
-# (၅) User Input ကို လက်ခံခြင်းနှင့် API Call
-# -----------------------------------------------------------------------
-
 if prompt := st.chat_input("စပါကီကို မေးခွန်းတစ်ခု မေးပါ..."):
-    
-    # 1. User Message ကို History ထဲ ထည့်သွင်းပြီး ပြသခြင်း
+    # User Message ကို History ထဲ ထည့်သွင်း
     user_message = {"role": "user", "content": prompt}
     st.session_state.messages.append(user_message)
     
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # 2. Assistant ၏ တုံ့ပြန်မှုကို ရယူခြင်း
     with st.chat_message("assistant"):
         with st.spinner("🤖 စပါကီ စဉ်းစားနေပါတယ်..."):
-            
-            ai_response_text = "" # Default တန်ဖိုး သတ်မှတ်
-            
             try:
-                # API Call အတွက် System Message အပါအဝင် History အားလုံးကို ထည့်သွင်း
-                messages_for_api = [
-                    {"role": m["role"], "content": m["content"]}
-                    for m in st.session_state.messages
-                ]
-                
+                # OpenRouter API Call (Chat Completion ပုံစံ)
                 response = st.session_state.chat_client.chat.completions.create(
                     model=st.session_state.model,
-                    messages=messages_for_api,
-                    temperature=0.7, 
-                    max_tokens=256   
+                    messages=[
+                        {"role": m["role"], "content": m["content"]}
+                        for m in st.session_state.messages
+                    ],
+                    temperature=0.7, # ဖန်တီးမှုအားကောင်းစေရန်
+                    max_tokens=256   # ကလေးများအတွက် တိုတိုသာ ဖြေရန်
                 )
                 
                 ai_response_text = response.choices[0].message.content
                 st.markdown(ai_response_text)
-                
-            except APIError as e: 
-                # API Call အမှားဖြစ်ခဲ့ပါက Error ကို ပြသခြင်း
-                st.error(f"😥 စပါကီ စကားပြောဖို့ ခက်ခဲနေပါတယ်။ (API Error) - {e}")
-                # Error ဖြစ်ပါက History ထဲသို့ Error message ထည့်ရန်
-                ai_response_text = "😥 စပါကီ စကားပြောဖို့ ခက်ခဲနေပါတယ်။ (API Key သို့မဟုတ် Server Error)"
-                st.markdown(ai_response_text)
 
+            except APIError as e: # FIXED: အခု APIError ကို ဖမ်းယူနိုင်ပြီ
+                # APIError သည် Status code ကို တိုက်ရိုက်မပံ့ပိုးနိုင်သော်လည်း Error ကိုပြသနိုင်
+                ai_response_text = "😥 စပါကီ စကားပြောဖို့ ခက်ခဲနေပါတယ်။ (API Key သို့မဟုတ် Server Error)"
+                st.error(f"Error Details: {e}")
+                st.markdown(ai_response_text)
             except Exception as e:
-                 # အခြား မမျှော်လင့်ထားသော Error များ
-                 st.error(f"😥 စပါကီ စကားပြောဖို့ ခက်ခဲနေပါတယ်။ (General Error) - {e}")
-                 # Error ဖြစ်ပါက History ထဲသို့ Error message ထည့်ရန်
                  ai_response_text = "😥 စပါကီ စကားပြောဖို့ ခက်ခဲနေပါတယ်။ (ချိတ်ဆက်မှု စစ်ပါ)"
+                 st.error(f"General Error: {e}")
                  st.markdown(ai_response_text)
 
-    # 3. Assistant ၏ တုံ့ပြန်ချက်ကို History ထဲ ထည့်သွင်း (Error ဖြစ်ခဲ့ရင်တောင် Error message ကို ထည့်သည်)
+    # Assistant Message ကို History ထဲ ထည့်သွင်း
     st.session_state.messages.append({"role": "assistant", "content": ai_response_text})
-

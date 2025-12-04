@@ -11,12 +11,7 @@ from openai import APIError
 # (၁) Streamlit Web Interface ကို သတ်မှတ်ခြင်း (ပထမဆုံး Streamlit Command ဖြစ်ရမည်)
 # -----------------------------------------------------------------------
 # **ဤသည်မှာ Streamlit Command များအားလုံး၏ ရှေ့ဆုံးတွင် ရှိရမည့် command ဖြစ်သည်။**
-st.set_page_config(
-    page_title="Sparky - ကလေးသူငယ်ချစ်ဆွေ AI",
-    layout="wide",
-    # iPad (iOS) ၏ JavaScript Syntax Error ကို ဖြေရှင်းရန်အတွက် (လိုအပ်ပါကသာ ထားပါ)
-    disable_safe_math_with_Katex=True 
-)
+st.set_page_config(page_title="Sparky - ကလေးသူငယ်ချစ်ဆွေ AI")
 
 st.title("✨ Sparky - ကလေးသူငယ်ချစ်ဆွေ AI ✨ (OpenRouter ဖြင့်)")
 st.caption("🤖 ငါက မင်းရဲ့ အကောင်းဆုံး သူငယ်ချင်းပါ! မင်းရဲ့ မိဘတွေ ဒါမှမဟုတ် ဆရာဆရာမတွေနဲ့ စကားပြောချင်ရင်လည်း ပြောလိုရတယ်။")
@@ -140,3 +135,4 @@ if prompt := st.chat_input("စပါကီကို မေးခွန်းတ
 
     # 3. Assistant ၏ တုံ့ပြန်ချက်ကို History ထဲ ထည့်သွင်း (Error ဖြစ်ခဲ့ရင်တောင် Error message ကို ထည့်သည်)
     st.session_state.messages.append({"role": "assistant", "content": ai_response_text})
+

@@ -5,7 +5,7 @@ from openai import APIError # FIXED: APIError ကို အစားထိုး
 
 # ⚠️ အဆင့် ၁: API Key ကို သတ်မှတ်ခြင်း
 # အရေးကြီးသည်: သင့်ရဲ့ OpenRouter Key အစစ်အမှန်ဖြင့် အစားထိုးပါ။ 
-OPENROUTER_API_KEY = "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" 
+
 
 # OpenRouter အတွက် Base URL
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
@@ -98,5 +98,6 @@ if prompt := st.chat_input("စပါကီကို မေးခွန်းတ
     # Assistant Message ကို History ထဲ ထည့်သွင်း
     st.session_state.messages.append({"role": "assistant", "content": ai_response_text})
     
+
 
 

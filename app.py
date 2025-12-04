@@ -50,8 +50,9 @@ if 'chat_client' not in st.session_state:
 
 
 # 💻 Streamlit Web Interface
-st.set_page_config(page_title="Sparky - ကလေးသူငယ်ချင်း AI")
-st.title("🌟 Sparky - ကလေးသူငယ်ချင်း AI ✨ (OpenRouter ဖြင့်)")
+st.set_page_config(page_title="Sparky - ကလေးသူငယ်ချင်း AI", layout="wide",
+                  disable_safe_math_with_Katex=True)
+st.title("🌟 Sparky - ကလေးသူငယ်ချင်း AI ✨ ")
 st.caption("ငါက စပါကီပါ။ မင်းနဲ့ စကားပြောရတာ ဝမ်းသာပါတယ်! (Gemini အတွက် Billing မလိုပါ)")
 
 # System Message ကို ပြသရန် မလို၊ User/Assistant Message များကိုသာ ပြသမည်
@@ -98,6 +99,7 @@ if prompt := st.chat_input("စပါကီကို မေးခွန်းတ
     # Assistant Message ကို History ထဲ ထည့်သွင်း
     st.session_state.messages.append({"role": "assistant", "content": ai_response_text})
     
+
 
 
 
